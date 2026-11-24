@@ -1,0 +1,36 @@
+SUPER MAC — How to install
+==========================
+
+1. Drag "Super Mac" onto the "Applications" folder.
+2. Open Applications and double-click Super Mac.
+3. The first time, macOS will say it can't verify the app
+   (it isn't from the App Store). That's expected. To allow it:
+   - Open System Settings > Privacy & Security
+   - Scroll down and click "Open Anyway" next to Super Mac
+   - Enter your Mac password and click Open
+   You only need to do this once.
+
+Optional: for a deeper Protection scan (Safari data and Trash),
+turn on Super Mac in System Settings > Privacy & Security > Full Disk Access.
+
+Super Mac v0.9 beta. Requires macOS 14 Sonoma or newer. Works on Apple Silicon and Intel Macs.
+Anything Super Mac removes from your files goes to the Trash first, so you can put it back.
+
+
+طريقة التسطيب
+=============
+
+١. اسحب "Super Mac" وحطه على فولدر "Applications".
+٢. افتح Applications واضغط دبل كليك على Super Mac.
+٣. أول مرة الماك هيقولك إنه مش قادر يتأكد من البرنامج، عشان مش من الـ App Store.
+   ده طبيعي. عشان تسمح بيه:
+   - افتح System Settings ← Privacy & Security
+   - انزل لتحت ودوس "Open Anyway" اللي جنب Super Mac
+   - اكتب باسورد الماك ودوس Open
+   الخطوة دي بتتعمل مرة واحدة بس.
+
+اختياري: عشان الحماية تفحص Safari والسلة كمان، فعّل Super Mac من
+System Settings ← Privacy & Security ← Full Disk Access.
+
+محتاج macOS 14 (Sonoma) أو أحدث. بيشتغل على الماك الـ Apple Silicon والـ Intel.
+أي ملف من ملفاتك بيمسحه البرنامج بيروح سلة المهملات الأول، فتقدر ترجّعه.
