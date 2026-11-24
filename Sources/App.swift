@@ -2,8 +2,9 @@ import SwiftUI
 import AppKit
 
 struct RootView: View {
-    @Bindable var s: AppState
+    @ObservedObject var s: AppState
     @Namespace private var ns
+    @State private var showWhatsNew = false
 
     var body: some View {
         ZStack {
@@ -23,6 +24,21 @@ struct RootView: View {
         .onAppear {
             Prefs.shared.applyDock()
             Automation.shared.start()
+            if UserDefaults.standard.string(forKey: "seenWhatsNew") != AppInfo.version {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { showWhatsNew = true } }
+            }
+        }
+        .overlay {
+            if showWhatsNew {
+                WhatsNewView {
+                    UserDefaults.standard.set(AppInfo.version, forKey: "seenWhatsNew")
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showWhatsNew = false }
+                } open: { page, tab in
+                    if let tab { s.settingsTab = tab }
+                    s.page = page
+                }
+                .transition(.opacity)
+            }
         }
     }
 
@@ -159,7 +175,7 @@ struct RootView: View {
 }
 
 struct MiniStats: View {
-    let stats: LiveStats
+    @ObservedObject var stats: LiveStats
     var body: some View {
         VStack(spacing: 10) {
             bar("internaldrive.fill", "Disk", stats.disk.usedFraction, "\(fmt(stats.disk.free)) free", [.aqua, .sky])
@@ -190,7 +206,7 @@ struct MiniStats: View {
 }
 
 struct MenuBarPanel: View {
-    let s: AppState
+    @ObservedObject var s: AppState
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -198,6 +214,15 @@ struct MenuBarPanel: View {
                 if let icon = ArtCache.image("app_icon") { Image(nsImage: icon).resizable().frame(width: 24, height: 24) }
                 Text("Super Mac").font(.system(size: 15, weight: .bold))
                 Spacer()
+                let r = HealthReport.compute(s)
+                HStack(spacing: 6) {
+                    ZStack {
+                        Ring(value: Double(r.score) / 100, colors: r.colors, lineWidth: 3).frame(width: 20, height: 20)
+                        Text("\(r.score)").font(.system(size: 8, weight: .heavy))
+                    }
+                    Text(r.label).font(.system(size: 11, weight: .semibold)).foregroundStyle(r.colors[0])
+                }
+                .help(r.notes.isEmpty ? "Everything looks great." : r.notes.joined(separator: "\n"))
             }
             MiniStats(stats: s.stats)
             VStack(alignment: .leading, spacing: 8) {
@@ -248,7 +273,7 @@ struct MenuBarPanel: View {
 }
 
 struct MenuBarLabel: View {
-    let s: AppState
+    @ObservedObject var s: AppState
     var body: some View {
         if Prefs.shared.menuBarFreeSpace {
             HStack(spacing: 4) {
@@ -263,7 +288,7 @@ struct MenuBarLabel: View {
 
 @main
 struct SuperMacApp: App {
-    @State private var state = AppState()
+    @StateObject private var state = AppState()
 
     init() { Automation.shared.start() }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import AppKit
 
 enum Phase: Equatable { case idle, scanning, results, working, done }
@@ -151,17 +152,17 @@ enum JunkScanner {
     }
 }
 
-@Observable @MainActor
-final class CleanupModel {
-    var phase: Phase = .idle
-    var groups: [JunkGroup] = []
-    var scanningNow: JunkKind?
-    var scanned: Set<JunkKind> = []
-    var found: Int64 = 0
-    var progress: Double = 0
-    var current = ""
-    var freed: Int64 = 0
-    var skipped = 0
+@MainActor
+final class CleanupModel: ObservableObject {
+    @Published var phase: Phase = .idle
+    @Published var groups: [JunkGroup] = []
+    @Published var scanningNow: JunkKind?
+    @Published var scanned: Set<JunkKind> = []
+    @Published var found: Int64 = 0
+    @Published var progress: Double = 0
+    @Published var current = ""
+    @Published var freed: Int64 = 0
+    @Published var skipped = 0
 
     var total: Int64 { groups.reduce(0) { $0 + $1.items.reduce(0) { $0 + $1.size } } }
     var selected: Int64 { groups.filter(\.enabled).reduce(0) { $0 + $1.size } }
@@ -310,13 +311,13 @@ enum ProtectionScanner {
     }
 }
 
-@Observable @MainActor
-final class ProtectionModel {
-    var phase: Phase = .idle
-    var threats: [FileItem] = []
-    var privacy: [PrivacyGroup] = []
-    var message = ""
-    var fullDiskAccess = FS.canReadProtected()
+@MainActor
+final class ProtectionModel: ObservableObject {
+    @Published var phase: Phase = .idle
+    @Published var threats: [FileItem] = []
+    @Published var privacy: [PrivacyGroup] = []
+    @Published var message = ""
+    @Published var fullDiskAccess = FS.canReadProtected()
 
     var selectedCount: Int { threats.filter(\.selected).count + privacy.filter { $0.selected && !$0.isRunning }.count }
 
@@ -390,10 +391,10 @@ struct HeavyApp: Identifiable {
     let app: NSRunningApplication
 }
 
-@Observable @MainActor
-final class PerformanceModel {
-    var phase: Phase = .idle
-    var tasks: [MaintTask] = [
+@MainActor
+final class PerformanceModel: ObservableObject {
+    @Published var phase: Phase = .idle
+    @Published var tasks: [MaintTask] = [
         .init(id: "ram", title: "Free Up RAM", detail: "Clears inactive memory so active apps have more room.", symbol: "memorychip.fill",
               admin: true, command: "/usr/sbin/purge", selected: true),
         .init(id: "dns", title: "Flush DNS Cache", detail: "Fixes websites that won't load or load slowly after network changes.", symbol: "network",
@@ -405,9 +406,9 @@ final class PerformanceModel {
         .init(id: "spot", title: "Reindex Spotlight", detail: "Fixes search that misses files. Indexing runs in the background for a while.", symbol: "magnifyingglass",
               admin: true, command: "/usr/bin/mdutil -E /", selected: false),
     ]
-    var agents: [FileItem] = []
-    var heavy: [HeavyApp] = []
-    var message = ""
+    @Published var agents: [FileItem] = []
+    @Published var heavy: [HeavyApp] = []
+    @Published var message = ""
 
     func scan() { Task { await performScan(animated: true) } }
 
@@ -580,18 +581,32 @@ enum AppScanner {
     }
 }
 
-@Observable @MainActor
-final class AppsModel {
+@MainActor
+final class AppsModel: ObservableObject {
     enum Filter: String, CaseIterable { case all = "All Apps", unused = "Unused", large = "Large", leftovers = "Leftovers" }
-    var phase: Phase = .idle
-    var apps: [AppEntry] = []
-    var orphans: [FileItem] = []
-    var filter: Filter = .all
-    var search = ""
-    var message = ""
-    var freed: Int64 = 0
+    @Published var phase: Phase = .idle
+    @Published var apps: [AppEntry] = []
+    @Published var orphans: [FileItem] = []
+    @Published var filter: Filter = .all
+    @Published var search = ""
+    @Published var message = ""
+    @Published var freed: Int64 = 0
 
     var unusedCount: Int { apps.filter(\.unused).count }
+
+    /// Drag-and-drop uninstall: select the dropped app (scanning first if needed).
+    func dropped(_ url: URL) {
+        Task {
+            if phase != .results { await performScan(animated: false) }
+            let path = url.standardizedFileURL.path
+            guard let i = apps.firstIndex(where: { $0.url.standardizedFileURL.path == path }) else { return }
+            withAnimation(.smooth) {
+                for j in apps.indices { apps[j].selected = (j == i) }
+                filter = .all
+                search = apps[i].name
+            }
+        }
+    }
     var selectedApps: [AppEntry] { apps.filter(\.selected) }
     var selectedSize: Int64 {
         selectedApps.reduce(0) { $0 + $1.totalSize } + (filter == .leftovers ? orphans.filter(\.selected).reduce(0) { $0 + $1.size } : 0)
@@ -720,17 +735,17 @@ enum ClutterScanner {
     }
 }
 
-@Observable @MainActor
-final class ClutterModel {
+@MainActor
+final class ClutterModel: ObservableObject {
     enum Tab: String, CaseIterable { case large = "Large & Old Files", duplicates = "Duplicates", installers = "Old Installers" }
-    var phase: Phase = .idle
-    var tab: Tab = .large
-    var large: [FileItem] = []
-    var dups: [DupGroup] = []
-    var installers: [FileItem] = []
-    var status = ""
-    var message = ""
-    var freed: Int64 = 0
+    @Published var phase: Phase = .idle
+    @Published var tab: Tab = .large
+    @Published var large: [FileItem] = []
+    @Published var dups: [DupGroup] = []
+    @Published var installers: [FileItem] = []
+    @Published var status = ""
+    @Published var message = ""
+    @Published var freed: Int64 = 0
 
     /// Only the current tab's selection is shown on the button and acted on.
     var selectedItems: [FileItem] {
@@ -797,13 +812,13 @@ struct LensNode: Identifiable, Hashable {
     var name: String { url.lastPathComponent }
 }
 
-@Observable @MainActor
-final class LensModel {
-    var path: [URL] = []
-    var nodes: [LensNode] = []
-    var loading = false
-    var done = 0
-    var totalChildren = 0
+@MainActor
+final class LensModel: ObservableObject {
+    @Published var path: [URL] = []
+    @Published var nodes: [LensNode] = []
+    @Published var loading = false
+    @Published var done = 0
+    @Published var totalChildren = 0
     private var cache: [URL: [LensNode]] = [:]
     private var loadTask: Task<Void, Never>?
 
@@ -856,13 +871,13 @@ final class LensModel {
 
 // MARK: - Smart Care
 
-@Observable @MainActor
-final class SmartCareModel {
-    var phase: Phase = .idle
-    var step = ""
-    var stepIndex = 0
-    var freed: Int64 = 0
-    var summary: [String] = []
+@MainActor
+final class SmartCareModel: ObservableObject {
+    @Published var phase: Phase = .idle
+    @Published var step = ""
+    @Published var stepIndex = 0
+    @Published var freed: Int64 = 0
+    @Published var summary: [String] = []
 
     func scan(_ s: AppState) {
         Task {
@@ -918,13 +933,13 @@ final class SmartCareModel {
 
 // MARK: - Root state
 
-@Observable @MainActor
-final class AppState {
+@MainActor
+final class AppState: ObservableObject {
     enum Page: Equatable { case settings, about }
-    var module: Module = .smartCare
-    var page: Page? = nil
-    var showPalette = false
-    var settingsTab: SettingsTab = .general
+    @Published var module: Module = .smartCare
+    @Published var page: Page? = nil
+    @Published var showPalette = false
+    @Published var settingsTab: SettingsTab = .general
     let stats = LiveStats()
     let smart = SmartCareModel()
     let cleanup = CleanupModel()
@@ -933,4 +948,17 @@ final class AppState {
     let apps = AppsModel()
     let clutter = ClutterModel()
     let lens = LensModel()
+    private var bag: [AnyCancellable] = []
+
+    /// Child models publish their own changes; re-publish them so any view observing AppState stays current.
+    init() {
+        let children: [ObservableObjectPublisher] = [
+            stats.objectWillChange, smart.objectWillChange, cleanup.objectWillChange, protection.objectWillChange,
+            performance.objectWillChange, apps.objectWillChange, clutter.objectWillChange, lens.objectWillChange,
+            Prefs.shared.objectWillChange, History.shared.objectWillChange, Automation.shared.objectWillChange,
+        ]
+        for c in children {
+            c.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
+        }
+    }
 }

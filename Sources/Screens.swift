@@ -8,7 +8,7 @@ let phaseTransition = AnyTransition.asymmetric(
 // MARK: - Smart Care
 
 struct SmartCareScreen: View {
-    @Bindable var s: AppState
+    @ObservedObject var s: AppState
     var m: SmartCareModel { s.smart }
 
     var body: some View {
@@ -41,7 +41,7 @@ struct SmartCareScreen: View {
 }
 
 struct HealthStrip: View {
-    let stats: LiveStats
+    @ObservedObject var stats: LiveStats
     var body: some View {
         HStack(spacing: 14) {
             gauge("Disk", stats.disk.usedFraction, "\(fmt(stats.disk.free)) free", [.aqua, .sky])
@@ -67,7 +67,7 @@ struct HealthStrip: View {
 }
 
 struct SmartScanning: View {
-    let m: SmartCareModel
+    @ObservedObject var m: SmartCareModel
     let steps: [Module] = [.cleanup, .protection, .performance, .applications, .clutter]
     var body: some View {
         HStack(spacing: 60) {
@@ -102,7 +102,7 @@ struct SmartScanning: View {
 }
 
 struct SmartResults: View {
-    @Bindable var s: AppState
+    @ObservedObject var s: AppState
     var body: some View {
         VStack(spacing: 0) {
             ResultsHeader(module: .smartCare, title: "Here's what we found",
@@ -193,7 +193,7 @@ struct AppearCard<C: View>: View {
 // MARK: - Cleanup
 
 struct CleanupScreen: View {
-    @Bindable var m: CleanupModel
+    @ObservedObject var m: CleanupModel
     @State private var detail: JunkKind?
     @State private var confirm = false
 
@@ -330,7 +330,7 @@ struct JunkDetail: View {
 // MARK: - Protection
 
 struct ProtectionScreen: View {
-    @Bindable var m: ProtectionModel
+    @ObservedObject var m: ProtectionModel
     var body: some View {
         ZStack {
             switch m.phase {
@@ -428,8 +428,8 @@ struct PrivacyRow: View {
 // MARK: - Performance
 
 struct PerformanceScreen: View {
-    @Bindable var m: PerformanceModel
-    let stats: LiveStats
+    @ObservedObject var m: PerformanceModel
+    @ObservedObject var stats: LiveStats
     @State private var confirmAgents = false
 
     var body: some View {
@@ -547,8 +547,9 @@ struct PerformanceScreen: View {
 // MARK: - Applications
 
 struct ApplicationsScreen: View {
-    @Bindable var m: AppsModel
+    @ObservedObject var m: AppsModel
     @State private var confirm = false
+    @State private var dropTarget = false
 
     var filtered: [Binding<AppEntry>] {
         $m.apps.filter { b in
@@ -566,14 +567,35 @@ struct ApplicationsScreen: View {
     var body: some View {
         ZStack {
             switch m.phase {
-            case .idle: ModuleLanding(module: .applications, action: m.scan)
+            case .idle:
+                ModuleLanding(module: .applications, action: m.scan) {
+                    Label("Tip: drag any app here to uninstall it", systemImage: "hand.draw.fill")
+                        .font(.system(size: 12)).foregroundStyle(.white.opacity(0.5))
+                }
             case .scanning: ScanningScreen(module: .applications, title: "Reviewing applications…", detail: "Measuring apps and their support files")
             case .results: results
             case .working: WorkingScreen(module: .applications, title: "Uninstalling…", detail: "Moving apps and their files to the Trash")
             case .done: DoneScreen(module: .applications, big: fmt(m.freed), subtitle: m.message, buttonTitle: "Back") { m.back() }
             }
+            if dropTarget {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10, 8]))
+                    .foregroundStyle(Color.sky.opacity(0.9))
+                    .background(Color.sky.opacity(0.08), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .overlay(Label("Drop to uninstall", systemImage: "trash.fill").font(.system(size: 18, weight: .bold)).padding(.horizontal, 20).padding(.vertical, 12).glassCapsule())
+                    .padding(24)
+                    .transition(.opacity)
+            }
         }
         .id(m.phase).transition(phaseTransition)
+        .onDrop(of: [.fileURL], isTargeted: $dropTarget.animation(.smooth)) { providers in
+            guard let p = providers.first else { return false }
+            _ = p.loadObject(ofClass: URL.self) { url, _ in
+                guard let url, url.pathExtension == "app" else { return }
+                Task { @MainActor in m.dropped(url) }
+            }
+            return true
+        }
     }
 
     var results: some View {
@@ -692,7 +714,7 @@ struct AppRow: View {
 // MARK: - My Clutter
 
 struct ClutterScreen: View {
-    @Bindable var m: ClutterModel
+    @ObservedObject var m: ClutterModel
     @State private var confirm = false
 
     var body: some View {
@@ -763,7 +785,7 @@ struct ClutterScreen: View {
 // MARK: - Space Lens
 
 struct SpaceLensScreen: View {
-    @Bindable var m: LensModel
+    @ObservedObject var m: LensModel
     @State private var toTrash: LensNode?
 
     var body: some View {

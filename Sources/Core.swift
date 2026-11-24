@@ -154,12 +154,12 @@ enum SysInfo {
     static var memoryTotal: UInt64 { ProcessInfo.processInfo.physicalMemory }
 }
 
-@Observable @MainActor
-final class LiveStats {
-    var cpu: Double = 0
-    var memUsed: UInt64 = 0
-    var memTotal: UInt64 = SysInfo.memoryTotal
-    var disk = SysInfo.disk()
+@MainActor
+final class LiveStats: ObservableObject {
+    @Published var cpu: Double = 0
+    @Published var memUsed: UInt64 = 0
+    @Published var memTotal: UInt64 = SysInfo.memoryTotal
+    @Published var disk = SysInfo.disk()
     private var last = SysInfo.cpuTicks()
     private var timer: Timer?
 

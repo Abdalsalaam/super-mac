@@ -383,3 +383,17 @@ struct SpinnerRing: View {
 }
 
 func fileIcon(_ url: URL) -> NSImage { NSWorkspace.shared.icon(forFile: url.path) }
+
+// MARK: - macOS 13 compatibility helpers
+
+extension View {
+    /// Symbol bounce on macOS 14+, nothing on 13.
+    @ViewBuilder func bounceEffect<V: Equatable>(value: V) -> some View {
+        if #available(macOS 14, *) { self.symbolEffect(.bounce, value: value) } else { self }
+    }
+    /// Two-value onChange on every supported macOS.
+    @ViewBuilder func onChangeCompat<V: Equatable>(of value: V, _ action: @escaping (V) -> Void) -> some View {
+        if #available(macOS 14, *) { self.onChange(of: value) { _, new in action(new) } }
+        else { self.onChange(of: value, perform: action) }
+    }
+}

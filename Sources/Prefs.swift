@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import AppKit
 import UserNotifications
 import ServiceManagement
@@ -42,37 +43,37 @@ enum PrefKeys {
     }
 }
 
-@Observable @MainActor
-final class Prefs {
+@MainActor
+final class Prefs: ObservableObject {
     static let shared = Prefs()
     private let d = UserDefaults.standard
 
     // General
-    var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock"); applyDock() } }
-    var menuBarFreeSpace: Bool { didSet { d.set(menuBarFreeSpace, forKey: "menuBarFreeSpace") } }
-    var reduceMotion: Bool { didSet { d.set(reduceMotion, forKey: "reduceMotion") } }
-    var launchAtLogin: Bool = false
+    @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock"); applyDock() } }
+    @Published var menuBarFreeSpace: Bool { didSet { d.set(menuBarFreeSpace, forKey: "menuBarFreeSpace") } }
+    @Published var reduceMotion: Bool { didSet { d.set(reduceMotion, forKey: "reduceMotion") } }
+    @Published var launchAtLogin: Bool = false
 
     // Automation
-    var autoScan: Frequency { didSet { d.set(autoScan.rawValue, forKey: "autoScan") } }
-    var autoHour: Int { didSet { d.set(autoHour, forKey: "autoHour") } }
-    var autoClean: Bool { didSet { d.set(autoClean, forKey: "autoClean") } }
-    var autoCleanMinMB: Int { didSet { d.set(autoCleanMinMB, forKey: "autoCleanMinMB") } }
-    var lastAutoRun: Date? { didSet { d.set(lastAutoRun, forKey: "lastAutoRun") } }
+    @Published var autoScan: Frequency { didSet { d.set(autoScan.rawValue, forKey: "autoScan") } }
+    @Published var autoHour: Int { didSet { d.set(autoHour, forKey: "autoHour") } }
+    @Published var autoClean: Bool { didSet { d.set(autoClean, forKey: "autoClean") } }
+    @Published var autoCleanMinMB: Int { didSet { d.set(autoCleanMinMB, forKey: "autoCleanMinMB") } }
+    @Published var lastAutoRun: Date? { didSet { d.set(lastAutoRun, forKey: "lastAutoRun") } }
 
     // Alerts
-    var lowDiskAlert: Bool { didSet { d.set(lowDiskAlert, forKey: "lowDiskAlert") } }
-    var lowDiskGB: Int { didSet { d.set(lowDiskGB, forKey: "lowDiskGB") } }
-    var trashAlert: Bool { didSet { d.set(trashAlert, forKey: "trashAlert") } }
-    var trashGB: Int { didSet { d.set(trashGB, forKey: "trashGB") } }
-    var memoryAlert: Bool { didSet { d.set(memoryAlert, forKey: "memoryAlert") } }
-    var downloadsAlert: Bool { didSet { d.set(downloadsAlert, forKey: "downloadsAlert") } }
-    var downloadsGB: Int { didSet { d.set(downloadsGB, forKey: "downloadsGB") } }
+    @Published var lowDiskAlert: Bool { didSet { d.set(lowDiskAlert, forKey: "lowDiskAlert") } }
+    @Published var lowDiskGB: Int { didSet { d.set(lowDiskGB, forKey: "lowDiskGB") } }
+    @Published var trashAlert: Bool { didSet { d.set(trashAlert, forKey: "trashAlert") } }
+    @Published var trashGB: Int { didSet { d.set(trashGB, forKey: "trashGB") } }
+    @Published var memoryAlert: Bool { didSet { d.set(memoryAlert, forKey: "memoryAlert") } }
+    @Published var downloadsAlert: Bool { didSet { d.set(downloadsAlert, forKey: "downloadsAlert") } }
+    @Published var downloadsGB: Int { didSet { d.set(downloadsGB, forKey: "downloadsGB") } }
 
     // Cleanup
-    var disabledKinds: Set<String> { didSet { d.set(Array(disabledKinds), forKey: "disabledKinds") } }
-    var tempAgeDays: Int { didSet { d.set(tempAgeDays, forKey: "tempAgeDays") } }
-    var excluded: [String] { didSet { d.set(excluded, forKey: "excluded") } }
+    @Published var disabledKinds: Set<String> { didSet { d.set(Array(disabledKinds), forKey: "disabledKinds") } }
+    @Published var tempAgeDays: Int { didSet { d.set(tempAgeDays, forKey: "tempAgeDays") } }
+    @Published var excluded: [String] { didSet { d.set(excluded, forKey: "excluded") } }
 
     private init() {
         let d = UserDefaults.standard
@@ -153,10 +154,10 @@ struct HistoryEntry: Codable, Identifiable, Hashable {
     var automatic: Bool
 }
 
-@Observable @MainActor
-final class History {
+@MainActor
+final class History: ObservableObject {
     static let shared = History()
-    private(set) var entries: [HistoryEntry] = []
+    @Published private(set) var entries: [HistoryEntry] = []
     private let key = "history.v1"
 
     private init() {
@@ -207,12 +208,12 @@ enum Notifier {
 
 // MARK: - Automation: scheduled scans, auto-clean and watchdog alerts
 
-@Observable @MainActor
-final class Automation {
+@MainActor
+final class Automation: ObservableObject {
     static let shared = Automation()
-    var running = false
-    var lastResult: String?
-    var trashSize: Int64 = 0
+    @Published var running = false
+    @Published var lastResult: String?
+    @Published var trashSize: Int64 = 0
     private var timer: Timer?
     private var lastAlert: [String: Date] = [:]
     private let launched = Date()
@@ -321,10 +322,10 @@ final class Automation {
 
 // MARK: - Update check (GitHub releases)
 
-@Observable @MainActor
-final class Updater {
+@MainActor
+final class Updater: ObservableObject {
     enum State: Equatable { case idle, checking, upToDate, available(String), failed }
-    var state: State = .idle
+    @Published var state: State = .idle
 
     func check() {
         state = .checking
@@ -342,11 +343,11 @@ final class Updater {
 
 // MARK: - Disk forecast (one free-space sample per day, linear trend)
 
-@Observable @MainActor
-final class DiskForecast {
+@MainActor
+final class DiskForecast: ObservableObject {
     static let shared = DiskForecast()
     struct Sample: Codable { var day: Date; var free: Int64 }
-    private(set) var samples: [Sample] = []
+    @Published private(set) var samples: [Sample] = []
     private let key = "diskSamples.v1"
 
     private init() {

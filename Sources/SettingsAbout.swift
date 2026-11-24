@@ -145,7 +145,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 }
 
 struct SettingsScreen: View {
-    @Bindable var s: AppState
+    @ObservedObject var s: AppState
     @Namespace private var ns
 
     var body: some View {
@@ -210,8 +210,8 @@ struct SettingsScreen: View {
 // MARK: Automation
 
 struct AutomationPane: View {
-    @Bindable var p = Prefs.shared
-    let auto = Automation.shared
+    @ObservedObject var p = Prefs.shared
+    @ObservedObject var auto = Automation.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -269,8 +269,8 @@ struct AutomationPane: View {
                   systemImage: "info.circle.fill")
                 .font(.system(size: 11.5)).foregroundStyle(.white.opacity(0.5)).padding(.horizontal, 6)
         }
-        .onChange(of: p.autoScan) { _, v in if v != .off { Notifier.requestAccess() } }
-        .onChange(of: p.lowDiskAlert) { _, v in if v { Notifier.requestAccess() } }
+        .onChangeCompat(of: p.autoScan) { v in if v != .off { Notifier.requestAccess() } }
+        .onChangeCompat(of: p.lowDiskAlert) { v in if v { Notifier.requestAccess() } }
     }
 
     var hero: some View {
@@ -324,7 +324,7 @@ struct AutomationPane: View {
 // MARK: General
 
 struct GeneralPane: View {
-    @Bindable var p = Prefs.shared
+    @ObservedObject var p = Prefs.shared
     @State private var loginError: String?
 
     var body: some View {
@@ -374,7 +374,7 @@ struct GeneralPane: View {
 // MARK: Cleanup
 
 struct CleanupPane: View {
-    @Bindable var p = Prefs.shared
+    @ObservedObject var p = Prefs.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             SettingCard(title: "What Cleanup looks for") {
@@ -400,7 +400,7 @@ struct CleanupPane: View {
 // MARK: Ignore list
 
 struct ExclusionsPane: View {
-    @Bindable var p = Prefs.shared
+    @ObservedObject var p = Prefs.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
@@ -448,7 +448,7 @@ struct ExclusionsPane: View {
 // MARK: History
 
 struct HistoryPane: View {
-    let h = History.shared
+    @ObservedObject var h = History.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 14) {
@@ -609,7 +609,7 @@ struct BrandCapsule: View {
 }
 
 struct AboutScreen: View {
-    @State private var updater = Updater()
+    @StateObject private var updater = Updater()
     @State private var appeared = false
     @State private var float = false
     @State private var spin = false
@@ -626,7 +626,11 @@ struct AboutScreen: View {
                     .foregroundStyle(.white.opacity(0.5))
                 Text(Developer.name)
                     .font(.display(38, .bold)).tracking(-0.8)
-                Text("Designer & developer. I made Super Mac because keeping your Mac clean shouldn't need a subscription. Ideas, bugs, or just hi — my inbox is open.")
+                Text("Art Director")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(LinearGradient(colors: [.lilac, .pinkish], startPoint: .leading, endPoint: .trailing))
+                    .padding(.top, -6)
+                Text("I spend my days making things look right. I got tired of paying a subscription just to keep my Mac tidy, so I designed the cleaner I actually wanted to use — and made it free for everyone. Got an idea, or found a bug? Say hi.")
                     .font(.system(size: 15)).foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center).frame(maxWidth: 520)
                     .fixedSize(horizontal: false, vertical: true)
@@ -652,7 +656,6 @@ struct AboutScreen: View {
                 HStack(spacing: 6) {
                     Text(Developer.email)
                     Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.system(size: 10, weight: .semibold))
-                        .contentTransition(.symbolEffect(.replace))
                 }
                 .font(.system(size: 12)).foregroundStyle(.white.opacity(copied ? 0.9 : 0.45))
             }
@@ -754,7 +757,7 @@ struct AboutScreen: View {
 // MARK: - Autopilot chip (Smart Care home)
 
 struct AutopilotChip: View {
-    let s: AppState
+    @ObservedObject var s: AppState
     @State private var hover = false
     var body: some View {
         let p = Prefs.shared, h = History.shared
@@ -785,7 +788,7 @@ struct AutopilotChip: View {
 // MARK: - Mac Health badge (Smart Care home)
 
 struct HealthBadge: View {
-    let s: AppState
+    @ObservedObject var s: AppState
     var body: some View {
         let r = HealthReport.compute(s)
         HStack(spacing: 10) {
@@ -817,7 +820,7 @@ struct PaletteItem: Identifiable {
 }
 
 struct CommandPalette: View {
-    @Bindable var s: AppState
+    @ObservedObject var s: AppState
     @State private var query = ""
     @State private var index = 0
     @FocusState private var focused: Bool
@@ -880,20 +883,7 @@ struct CommandPalette: View {
                     ScrollView {
                         VStack(spacing: 2) {
                             ForEach(Array(filtered.enumerated()), id: \.1.id) { i, it in
-                                Button { perform(it) } label: {
-                                    HStack(spacing: 12) {
-                                        IconTile(symbol: it.symbol, colors: it.colors, size: 30)
-                                        VStack(alignment: .leading, spacing: 1) {
-                                            Text(it.title).font(.system(size: 13.5, weight: .semibold))
-                                            Text(it.subtitle).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
-                                        }
-                                        Spacer()
-                                        if i == index { Image(systemName: "return").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5)) }
-                                    }
-                                    .padding(.horizontal, 10).padding(.vertical, 7)
-                                    .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(i == index ? Color.white.opacity(0.1) : .clear))
-                                    .contentShape(Rectangle())
-                                }
+                                Button { perform(it) } label: { PaletteRow(item: it, selected: i == index) }
                                 .buttonStyle(.plain).id(i)
                                 .onHover { if $0 { index = i } }
                             }
@@ -904,7 +894,7 @@ struct CommandPalette: View {
                         .padding(8)
                     }
                     .frame(maxHeight: 360)
-                    .onChange(of: index) { _, i in withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(i) } }
+                    .onChangeCompat(of: index) { i in withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(i) } }
                 }
             }
             .frame(width: 580)
@@ -915,13 +905,99 @@ struct CommandPalette: View {
             .transition(.scale(scale: 0.96).combined(with: .opacity))
         }
         .onAppear { focused = true; index = 0 }
-        .onChange(of: query) { _, _ in index = 0 }
-        .onKeyPress(.downArrow) { index = min(index + 1, max(filtered.count - 1, 0)); return .handled }
-        .onKeyPress(.upArrow) { index = max(index - 1, 0); return .handled }
-        .onKeyPress(.escape) { withAnimation(.spring(response: 0.3)) { s.showPalette = false }; return .handled }
+        .onChangeCompat(of: query) { _ in index = 0 }
+        .background {
+            // Keyboard navigation that works on every macOS version
+            Group {
+                Button("") { index = min(index + 1, max(filtered.count - 1, 0)) }.keyboardShortcut(.downArrow, modifiers: [])
+                Button("") { index = max(index - 1, 0) }.keyboardShortcut(.upArrow, modifiers: [])
+                Button("") { withAnimation(.spring(response: 0.3)) { s.showPalette = false } }.keyboardShortcut(.cancelAction)
+            }
+            .opacity(0).allowsHitTesting(false)
+        }
     }
 }
 
 extension Array {
     subscript(safe i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+}
+
+struct PaletteRow: View {
+    let item: PaletteItem
+    let selected: Bool
+    var body: some View {
+        HStack(spacing: 12) {
+            IconTile(symbol: item.symbol, colors: item.colors, size: 30)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.title).font(.system(size: 13.5, weight: .semibold))
+                Text(item.subtitle).font(.system(size: 11)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+            }
+            Spacer()
+            if selected {
+                Image(systemName: "return").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(selected ? Color.white.opacity(0.1) : Color.clear))
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - What's New (once per version)
+
+struct WhatsNewView: View {
+    let done: () -> Void
+    let open: (AppState.Page?, SettingsTab?) -> Void
+    @State private var appeared = false
+
+    let items: [(String, [Color], String, String)] = [
+        ("clock.arrow.2.circlepath", [.sky, .violet], "Autopilot", "Scheduled scans, auto-clean of safe junk and smart alerts."),
+        ("heart.text.square.fill", [.mint, .teal], "Mac Health", "A live score that tells you what needs attention."),
+        ("command", [.violet, .pinkish], "Command Palette", "Press ⌘K and type. Every action, from the keyboard."),
+        ("chart.line.downtrend.xyaxis", [.aqua, .sky], "Disk Forecast", "Know roughly how many days of space you have left."),
+        ("hand.draw.fill", [.amber, .coral], "Drag to uninstall", "Drop any app on Applications to remove it completely."),
+    ]
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.45).ignoresSafeArea().onTapGesture(perform: done)
+            VStack(spacing: 22) {
+                VStack(spacing: 8) {
+                    if let icon = ArtCache.image("app_icon") {
+                        Image(nsImage: icon).resizable().interpolation(.high).frame(width: 72, height: 72)
+                            .shadow(color: .violet.opacity(0.6), radius: 18)
+                    }
+                    Text("WHAT'S NEW IN \(AppInfo.label.uppercased())").font(.system(size: 11, weight: .semibold)).kerning(2).foregroundStyle(.white.opacity(0.5))
+                    Text("Super Mac now looks after itself").font(.display(28, .bold)).tracking(-0.5)
+                }
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { i, it in
+                        HStack(spacing: 14) {
+                            IconTile(symbol: it.0, colors: it.1, size: 36)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(it.2).font(.system(size: 14, weight: .semibold))
+                                Text(it.3).font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))
+                            }
+                        }
+                        .opacity(appeared ? 1 : 0).offset(x: appeared ? 0 : -12)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1 + Double(i) * 0.06), value: appeared)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 10) {
+                    Button("Set up Autopilot") { done(); open(.settings, .automation) }
+                        .buttonStyle(GhostButtonStyle())
+                    Spacer()
+                    Button("Let's go", action: done).buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(30)
+            .frame(width: 480)
+            .background(Color(hex: 0x14112A).opacity(0.85), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .glass(26)
+            .shadow(color: .black.opacity(0.5), radius: 40, y: 20)
+            .scaleEffect(appeared ? 1 : 0.94)
+        }
+        .onAppear { withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { appeared = true } }
+    }
 }

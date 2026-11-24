@@ -139,7 +139,7 @@ struct DoneScreen: View {
                         .overlay(Circle().fill(LinearGradient(colors: [.white.opacity(0.35), .clear], startPoint: .top, endPoint: .center)))
                         .shadow(color: module.colors[0].opacity(0.6), radius: 30)
                     Image(systemName: "checkmark").font(.system(size: 58, weight: .heavy)).foregroundStyle(.white)
-                        .symbolEffect(.bounce, value: pop)
+                        .bounceEffect(value: pop)
                 }
                 .scaleEffect(pop ? 1 : 0.3)
                 VStack(spacing: 8) {
