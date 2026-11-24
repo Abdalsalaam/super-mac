@@ -22,15 +22,18 @@ let res = CommandLine.arguments[2]
               "brand_facebook","brand_instagram","brand_linkedin","brand_github"] {
         ArtCache.images[n] = NSImage(contentsOfFile: res + "/" + n + ".png")
     }
+    let only = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "all"
+    if only == "whatsnew" { UserDefaults.standard.removeObject(forKey: "seenWhatsNew") }
+    else { UserDefaults.standard.set(AppInfo.version, forKey: "seenWhatsNew") }
     let state = AppState()
     let win = NSWindow(contentRect: NSRect(x: 80, y: 80, width: 1160, height: 760), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
     win.titlebarAppearsTransparent = true
     win.appearance = NSAppearance(named: .darkAqua)
     win.contentView = NSHostingView(rootView: RootView(s: state).preferredColorScheme(.dark))
     win.orderFrontRegardless()
-    let only = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "all"
     Task { @MainActor in
         await wait(1.5)
+        if only == "whatsnew" { await wait(1.5); snap(win, "whatsnew"); app.terminate(nil) }
         if only == "all" || only == "pages" {
             state.page = .about; await wait(2.6); snap(win, "about")
             state.page = nil; state.module = .smartCare; await wait(1.5); snap(win, "idle_smartCare")
@@ -39,6 +42,7 @@ let res = CommandLine.arguments[2]
         }
         if only == "all" {
             state.page = nil
+            state.module = .applications; await wait(1.2); snap(win, "idle_applications")
             for mod in Module.allCases { state.module = mod; await wait(1.5); snap(win, "idle_\(mod.rawValue)") }
             state.module = .smartCare; state.smart.scan(state); await wait(2.5); snap(win, "smart_scanning")
             while state.smart.phase != .results { await wait(0.5) }
