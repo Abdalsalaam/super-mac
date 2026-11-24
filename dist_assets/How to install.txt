@@ -13,7 +13,7 @@ SUPER MAC — How to install
 Optional: for a deeper Protection scan (Safari data and Trash),
 turn on Super Mac in System Settings > Privacy & Security > Full Disk Access.
 
-Super Mac v0.9 beta. Requires macOS 14 Sonoma or newer. Works on Apple Silicon and Intel Macs.
+Super Mac v0.9 beta. Requires macOS 13 Ventura or newer. Works on Apple Silicon and Intel Macs.
 Anything Super Mac removes from your files goes to the Trash first, so you can put it back.
 
 
@@ -32,5 +32,5 @@ Anything Super Mac removes from your files goes to the Trash first, so you can p
 اختياري: عشان الحماية تفحص Safari والسلة كمان، فعّل Super Mac من
 System Settings ← Privacy & Security ← Full Disk Access.
 
-محتاج macOS 14 (Sonoma) أو أحدث. بيشتغل على الماك الـ Apple Silicon والـ Intel.
+محتاج macOS 13 (Ventura) أو أحدث. بيشتغل على الماك الـ Apple Silicon والـ Intel.
 أي ملف من ملفاتك بيمسحه البرنامج بيروح سلة المهملات الأول، فتقدر ترجّعه.
