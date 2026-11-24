@@ -11,14 +11,14 @@
 
 <p align="center">
   <a href="https://github.com/amirmhmdart/super-mac/releases/latest"><img src="https://img.shields.io/github/v/release/amirmhmdart/super-mac?include_prereleases&label=download&color=8B5CF6" alt="Download"></a>
-  <img src="https://img.shields.io/badge/macOS-14%2B-111?logo=apple" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/macOS-13%2B-111?logo=apple" alt="macOS 13+">
   <img src="https://img.shields.io/badge/Apple%20Silicon%20%26%20Intel-universal-EC4899" alt="Universal">
   <img src="https://img.shields.io/badge/price-free-10B981" alt="Free">
   <img src="https://img.shields.io/badge/license-MIT-3B82F6" alt="MIT">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/idle_smartCare.jpg" width="880" alt="Super Mac — Smart Care">
+  <img src="docs/banner.jpg" width="880" alt="Super Mac">
 </p>
 
 ---
@@ -31,7 +31,7 @@
 2. Open it. The first time, macOS says it can't verify the developer (the app isn't from the App Store).
    Go to **System Settings → Privacy & Security** and click **Open Anyway**. You only do this once.
 
-Requires macOS 14 Sonoma or newer. One universal app for Apple Silicon and Intel.
+Requires macOS 13 Ventura or newer. One universal app for Apple Silicon and Intel.
 
 ## What it does
 
@@ -50,8 +50,11 @@ Requires macOS 14 Sonoma or newer. One universal app for Apple Silicon and Intel
 | **Disk Forecast** *(new)* | Learns how fast your disk fills and tells you roughly how many days you have left. |
 | **History** *(new)* | Every cleanup is logged, with a 14-day chart and an all-time total. |
 | **Ignore List** *(new)* | Folders Super Mac will never touch. |
+| **Drag to uninstall** *(new)* | Drop any app onto the Applications page to remove it with its leftovers. |
 
 <p align="center">
+  <img src="docs/screenshots/idle_smartCare.jpg" width="49%" alt="Smart Care with Mac Health">
+  <img src="docs/screenshots/whatsnew.jpg" width="49%" alt="What's New">
   <img src="docs/screenshots/smart_results.jpg" width="49%" alt="Smart Care results">
   <img src="docs/screenshots/settings_automation.jpg" width="49%" alt="Autopilot settings">
   <img src="docs/screenshots/lens_map.jpg" width="49%" alt="Space Lens">
@@ -107,14 +110,14 @@ art/                   3D glass illustrations
 assets/                About page photo and brand glyphs
 ```
 
-Built with SwiftUI. Liquid Glass on macOS 26, with a material fallback on macOS 14–15.
+Built with SwiftUI. Liquid Glass on macOS 26, with a material fallback on macOS 13–15.
 
 ## Made by
 
 <img src="assets/developer.jpg" width="96" align="left" style="border-radius:50%; margin-right:16px" alt="Amir Mohamed">
 
-**Amir Mohamed**, designer & developer.
-Ideas, bugs or just saying hi, all welcome.
+**Amir Mohamed**, Art Director.
+I got tired of paying a subscription just to keep my Mac tidy, so I designed the cleaner I actually wanted to use, and made it free. Ideas, bugs or just saying hi, all welcome.
 
 [Facebook](https://www.facebook.com/AmirMohamedArtX/) · [Instagram](https://www.instagram.com/amirmhmdart/) · [LinkedIn](https://www.linkedin.com/in/amirmhmdart/) · [Email](mailto:amirmhmdart@gmail.com)
 

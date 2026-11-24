@@ -10,7 +10,7 @@ rm -rf build && mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" build/A
 SDK=$(ls -d /Library/Developer/CommandLineTools/SDKs/MacOSX26*.sdk 2>/dev/null | sort -V | tail -1)
 # Universal binary: Apple Silicon + Intel
 for arch in arm64 x86_64; do
-  swiftc -O -parse-as-library -swift-version 5 -sdk "$SDK" -target $arch-apple-macos14.0 \
+  swiftc -O -parse-as-library -swift-version 5 -sdk "$SDK" -target $arch-apple-macos13.0 \
     Sources/*.swift -o build/SuperMac-$arch
 done
 lipo -create build/SuperMac-arm64 build/SuperMac-x86_64 -output "$APP/Contents/MacOS/SuperMac"
@@ -48,7 +48,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.9</string>
   <key>CFBundleVersion</key><string>9</string>
-  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSAppleEventsUsageDescription</key><string>Super Mac asks macOS for your administrator password to run maintenance tasks.</string>
