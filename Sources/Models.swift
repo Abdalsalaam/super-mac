@@ -133,7 +133,7 @@ enum JunkScanner {
             }
             for url in candidates {
                 if isProtected(url.lastPathComponent, kind, running: running) { continue }
-                if !excluded.isEmpty && PrefKeys.isExcluded(url) { continue }
+                if !excluded.isEmpty && (PrefKeys.isExcluded(url) || PrefKeys.containsExcluded(url)) { continue }
                 if kind == .temp, let m = FS.modified(url), m > dayAgo { continue }
                 let s = FS.size(of: url)
                 if s > 0 { out.append(FileItem(url: url, size: s)) }
@@ -146,7 +146,7 @@ enum JunkScanner {
     static func remove(_ item: FileItem) -> Int64 {
         let parent = item.url.deletingLastPathComponent().standardizedFileURL.path
         let allowed = JunkKind.allCases.flatMap(\.allowedParents)
-        guard allowed.contains(parent) else { return item.size }
+        guard allowed.contains(parent), !PrefKeys.isExcluded(item.url), !PrefKeys.containsExcluded(item.url) else { return item.size }
         do { try FS.fm.removeItem(at: item.url); return 0 }
         catch { return FS.exists(item.url) ? FS.size(of: item.url) : 0 }
     }
@@ -533,7 +533,7 @@ enum AppScanner {
         }
         var seen = Set<String>()
         return paths.compactMap { u in
-            guard FS.exists(u), !PrefKeys.isExcluded(u), seen.insert(u.path).inserted else { return nil }
+            guard FS.exists(u), !PrefKeys.isExcluded(u), !PrefKeys.containsExcluded(u), seen.insert(u.path).inserted else { return nil }
             return FileItem(url: u, size: FS.size(of: u))
         }
     }
