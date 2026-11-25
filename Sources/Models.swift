@@ -555,6 +555,12 @@ enum AppScanner {
         .sorted { $0.totalSize > $1.totalSize }
     }
 
+    /// True when `url` is on the Ignore List or holds an item that is.
+    static func ignored(_ url: URL) -> Bool {
+        let inside = url.standardizedFileURL.path + "/"
+        return PrefKeys.isExcluded(url) || PrefKeys.excluded.contains { $0.hasPrefix(inside) }
+    }
+
     /// Support files that look like they belong to apps that are no longer installed.
     static func orphans(installed: [String]) -> [FileItem] {
         var known = Set(installed.map { $0.lowercased() })
@@ -573,6 +579,7 @@ enum AppScanner {
                       !n.hasPrefix("com.apple."), !n.contains("supermac") else { continue }
                 let vendor = n.split(separator: ".").prefix(2).joined(separator: ".")
                 if known.contains(n) || known.contains(where: { n.hasPrefix($0) || $0.hasPrefix(n) || $0.hasPrefix(vendor + ".") }) { continue }
+                if ignored(f) { continue }
                 let s = FS.size(of: f)
                 if s > 0 { out.append(FileItem(url: f, size: s, selected: false, note: sub)) }
             }
@@ -629,7 +636,7 @@ final class AppsModel: ObservableObject {
     func uninstall() {
         Task {
             let chosen = selectedApps
-            let orphanChosen = filter == .leftovers ? orphans.filter(\.selected) : []
+            let orphanChosen = filter == .leftovers ? orphans.filter { $0.selected && !AppScanner.ignored($0.url) } : []
             withAnimation(.smooth) { phase = .working }
             var removed = 0, failed: [String] = []
             freed = 0
