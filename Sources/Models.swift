@@ -133,7 +133,7 @@ enum JunkScanner {
             }
             for url in candidates {
                 if isProtected(url.lastPathComponent, kind, running: running) { continue }
-                if !excluded.isEmpty && (PrefKeys.isExcluded(url) || PrefKeys.containsExcluded(url)) { continue }
+                if !excluded.isEmpty && PrefKeys.mustKeep(url) { continue }
                 if kind == .temp, let m = FS.modified(url), m > dayAgo { continue }
                 let s = FS.size(of: url)
                 if s > 0 { out.append(FileItem(url: url, size: s)) }
@@ -146,7 +146,7 @@ enum JunkScanner {
     static func remove(_ item: FileItem) -> Int64 {
         let parent = item.url.deletingLastPathComponent().standardizedFileURL.path
         let allowed = JunkKind.allCases.flatMap(\.allowedParents)
-        guard allowed.contains(parent), !PrefKeys.isExcluded(item.url), !PrefKeys.containsExcluded(item.url) else { return item.size }
+        guard allowed.contains(parent), !PrefKeys.mustKeep(item.url) else { return item.size }
         do { try FS.fm.removeItem(at: item.url); return 0 }
         catch { return FS.exists(item.url) ? FS.size(of: item.url) : 0 }
     }
@@ -533,7 +533,7 @@ enum AppScanner {
         }
         var seen = Set<String>()
         return paths.compactMap { u in
-            guard FS.exists(u), !PrefKeys.isExcluded(u), !PrefKeys.containsExcluded(u), seen.insert(u.path).inserted else { return nil }
+            guard FS.exists(u), !PrefKeys.mustKeep(u), seen.insert(u.path).inserted else { return nil }
             return FileItem(url: u, size: FS.size(of: u))
         }
     }
@@ -640,14 +640,14 @@ final class AppsModel: ObservableObject {
             var needAdmin: [AppEntry] = []
             for app in chosen {
                 if FS.trash([app.url]).isEmpty {
-                    _ = FS.trash(app.leftovers.map(\.url)); removed += 1; freed += app.totalSize
+                    _ = FS.trash(app.leftovers.map(\.url).filter { !PrefKeys.mustKeep($0) }); removed += 1; freed += app.totalSize
                 } else { needAdmin.append(app) }
             }
             if !needAdmin.isEmpty {
                 let trashDir = home(".Trash").path
                 let cmd = needAdmin.map { "mv -f \(shellQuote($0.url.path)) \(shellQuote(trashDir + "/"))" }.joined(separator: "; ")
                 if runAsAdmin(cmd) {
-                    for app in needAdmin { _ = FS.trash(app.leftovers.map(\.url)); removed += 1; freed += app.totalSize }
+                    for app in needAdmin { _ = FS.trash(app.leftovers.map(\.url).filter { !PrefKeys.mustKeep($0) }); removed += 1; freed += app.totalSize }
                 } else { failed += needAdmin.map(\.name) }
             }
             let of = FS.trash(orphanChosen.map(\.url))

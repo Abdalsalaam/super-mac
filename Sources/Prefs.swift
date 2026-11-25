@@ -42,11 +42,11 @@ enum PrefKeys {
         return excluded.contains { p == $0 || p.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
     }
 
-    /// True when an ignored item lives somewhere inside `url`.
-    static func containsExcluded(_ url: URL) -> Bool {
+    /// True when `url` is ignored or holds an ignored item, so it must not be removed.
+    static func mustKeep(_ url: URL) -> Bool {
         let p = url.standardizedFileURL.path
-        let prefix = p.hasSuffix("/") ? p : p + "/"
-        return excluded.contains { $0.hasPrefix(prefix) }
+        let inside = p.hasSuffix("/") ? p : p + "/"
+        return isExcluded(url) || excluded.contains { $0.hasPrefix(inside) }
     }
 }
 
