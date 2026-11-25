@@ -354,7 +354,9 @@ final class ProtectionModel: ObservableObject {
             if !system.isEmpty {
                 let trashDir = home(".Trash").path
                 let cmd = system.map { "mv -f \(shellQuote($0.path)) \(shellQuote(trashDir + "/"))" }.joined(separator: "; ")
-                if runAsAdmin(cmd) { removed += system.count } else { failed += system.count }
+                _ = runAsAdmin(cmd)
+                let left = system.filter { FS.exists($0) }.count
+                removed += system.count - left; failed += left
             }
             for g in privacy where g.selected && !g.isRunning {
                 let f = FS.trash(g.urls)
@@ -646,9 +648,11 @@ final class AppsModel: ObservableObject {
             if !needAdmin.isEmpty {
                 let trashDir = home(".Trash").path
                 let cmd = needAdmin.map { "mv -f \(shellQuote($0.url.path)) \(shellQuote(trashDir + "/"))" }.joined(separator: "; ")
-                if runAsAdmin(cmd) {
-                    for app in needAdmin { _ = FS.trash(app.leftovers.map(\.url)); removed += 1; freed += app.totalSize }
-                } else { failed += needAdmin.map(\.name) }
+                _ = runAsAdmin(cmd)
+                for app in needAdmin {
+                    if FS.exists(app.url) { failed.append(app.name) }
+                    else { _ = FS.trash(app.leftovers.map(\.url)); removed += 1; freed += app.totalSize }
+                }
             }
             let of = FS.trash(orphanChosen.map(\.url))
             freed += orphanChosen.filter { !of.contains($0.url) }.reduce(0) { $0 + $1.size }
