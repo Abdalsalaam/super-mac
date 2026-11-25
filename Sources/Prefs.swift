@@ -42,11 +42,22 @@ enum PrefKeys {
         return excluded.contains { p == $0 || p.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
     }
 
-    /// True when `url` is ignored or holds an ignored item, so it must not be removed.
-    static func mustKeep(_ url: URL) -> Bool {
+    /// True when an ignored item lives somewhere inside `url`.
+    static func holdsExcluded(_ url: URL) -> Bool {
         let p = url.standardizedFileURL.path
         let inside = p.hasSuffix("/") ? p : p + "/"
-        return isExcluded(url) || excluded.contains { $0.hasPrefix(inside) }
+        return excluded.contains { $0.hasPrefix(inside) }
+    }
+
+    /// True when `url` is ignored or holds an ignored item, so it must not be removed as a whole.
+    static func mustKeep(_ url: URL) -> Bool { isExcluded(url) || holdsExcluded(url) }
+
+    /// What can be removed without touching the Ignore List: `url` itself, or the pieces around the ignored items inside it.
+    static func removable(_ url: URL) -> [URL] {
+        if isExcluded(url) { return [] }
+        guard holdsExcluded(url) else { return [url] }
+        if (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true { return [] }
+        return FS.children(url).flatMap(removable)
     }
 }
 
