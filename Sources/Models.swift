@@ -663,7 +663,7 @@ final class AppsModel: ObservableObject {
             orphans.removeAll { o in orphanChosen.contains { $0.id == o.id } && !of.contains(o.url) }
             message = failed.isEmpty
                 ? "Removed \(removed) app\(removed == 1 ? "" : "s")\(orphanChosen.isEmpty ? "" : " and \(orphanChosen.count) leftovers"). Everything is in the Trash if you change your mind."
-                : "Couldn't remove: \(failed.joined(separator: ", "))."
+                : "\(removed > 0 ? "Removed \(removed) app\(removed == 1 ? "" : "s"). " : "")Couldn't remove: \(failed.joined(separator: ", "))."
             withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) { phase = .done }
         }
     }
