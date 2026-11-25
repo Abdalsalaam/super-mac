@@ -615,8 +615,10 @@ final class AppsModel: ObservableObject {
         }
     }
     var selectedApps: [AppEntry] { apps.filter(\.selected) }
+    /// Ticked leftovers, minus anything that is on the Ignore List by now.
+    var selectedOrphans: [FileItem] { orphans.filter { $0.selected && !AppScanner.ignored($0.url) } }
     var selectedSize: Int64 {
-        selectedApps.reduce(0) { $0 + $1.totalSize } + (filter == .leftovers ? orphans.filter(\.selected).reduce(0) { $0 + $1.size } : 0)
+        selectedApps.reduce(0) { $0 + $1.totalSize } + (filter == .leftovers ? selectedOrphans.reduce(0) { $0 + $1.size } : 0)
     }
 
     func scan() { Task { await performScan(animated: true) } }
@@ -636,7 +638,7 @@ final class AppsModel: ObservableObject {
     func uninstall() {
         Task {
             let chosen = selectedApps
-            let orphanChosen = filter == .leftovers ? orphans.filter { $0.selected && !AppScanner.ignored($0.url) } : []
+            let orphanChosen = filter == .leftovers ? selectedOrphans : []
             withAnimation(.smooth) { phase = .working }
             var removed = 0, failed: [String] = []
             freed = 0
